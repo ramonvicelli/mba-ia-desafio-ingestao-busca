@@ -1,3 +1,11 @@
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from common import common
+
+TOP_K = int(os.getenv("TOP_K") or 10)
+GPT_MODEL = os.getenv("GPT_MODEL") or "gpt-5-nano"
+
 PROMPT_TEMPLATE = """
 CONTEXTO:
 {contexto}
@@ -25,5 +33,12 @@ PERGUNTA DO USUÁRIO:
 RESPONDA A "PERGUNTA DO USUÁRIO"
 """
 
-def search_prompt(question=None):
-    pass
+
+def search_prompt(question):
+    store = common()
+    results = store.similarity_search_with_score(question, k=TOP_K)
+    llm = ChatOpenAI(model=GPT_MODEL)
+    context = "".join([doc.page_content for doc, _ in results])
+    prompt = PROMPT_TEMPLATE.format(contexto=context, pergunta=question)
+    response = llm.invoke(prompt)
+    return response.content.strip()
